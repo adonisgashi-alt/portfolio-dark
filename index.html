@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Adonis Gashi</title>
+  <meta name="description" content="Adonis Gashi — selected projects, adrift in orbit.">
+  <meta name="theme-color" content="#03040a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Unbounded:wght@200;300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="space" aria-hidden="true"></canvas>
+
+  <main class="stage" id="stage">
+    <div class="name-wrap" id="nameWrap">
+      <h1 class="name name--main" id="name">Adonis Gashi</h1>
+    </div>
+    <div class="orbits" id="orbits" role="group" aria-label="Projects"></div>
+    <p class="hint" id="hint" aria-hidden="true"></p>
+  </main>
+
+  <!-- HUD corners -->
+  <div class="meta meta--tl" aria-hidden="true">AG<span class="meta-dim"> / portfolio</span></div>
+  <div class="meta meta--tr" aria-hidden="true"><span class="meta-dim">T+</span> <span id="clock">00:00:00</span></div>
+  <div class="meta meta--bl" aria-hidden="true"><span id="count">00</span> <span class="meta-dim">projects in orbit</span></div>
+  <div class="meta meta--br" aria-hidden="true"><span class="meta-dim">x</span> <span id="cx">0.000</span> <span class="meta-dim">y</span> <span id="cy">0.000</span></div>
+
+  <svg class="leader" id="leader" aria-hidden="true"><path id="leaderPath" d=""/></svg>
+
+  <aside class="hud" id="hud" hidden aria-live="polite">
+    <div class="hud-frame">
+      <span class="hc hc--tl"></span><span class="hc hc--tr"></span>
+      <span class="hc hc--bl"></span><span class="hc hc--br"></span>
+      <div class="hud-bar">
+        <span id="hudId">PRJ-01</span>
+        <span class="hud-status" id="hudStatus">acquiring</span>
+      </div>
+      <div class="hud-thumb">
+        <img id="hudImg" alt="">
+        <div class="hud-grid"></div>
+        <div class="hud-lines"></div>
+        <div class="hud-cross"></div>
+        <div class="hud-scan"></div>
+      </div>
+      <div class="hud-bar hud-bar--foot">
+        <span id="hudYear"></span>
+        <span id="hudTags"></span>
+      </div>
+    </div>
+    <h2 class="hud-title" id="hudTitle"></h2>
+    <p class="hud-desc" id="hudDesc"></p>
+    <a class="hud-link" id="hudLink" target="_blank" rel="noopener">open project <span aria-hidden="true">↗</span></a>
+  </aside>
+
+  <noscript>
+    <p class="noscript">Enable JavaScript to see the projects in orbit.</p>
+  </noscript>
+
+  <script src="projects.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

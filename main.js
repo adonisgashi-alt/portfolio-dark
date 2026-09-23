@@ -73,10 +73,6 @@
     const shockR = reduceMotion ? Infinity : since <= 0 ? -1 : since >= SHOCK_MS ? Infinity : easeOut(since / SHOCK_MS) * maxR;
 
     sctx.save();
-    if (!reduceMotion && since > 0 && since < 900) {
-      const amp = 7 * Math.exp(-since / 180);
-      sctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
-    }
     for (const s of stars) {
       const d = 0.15 + s.z;
       let x = (s.x - drift * d + mouse.sx * 26 * d) % W;
@@ -84,7 +80,7 @@
       const y = s.y + mouse.sy * 18 * d;
       let reveal = 1;
       if (shockR !== Infinity) {
-        reveal = clamp((shockR - Math.hypot(x - cx, y - cy)) / 180, 0, 1);
+        reveal = clamp((shockR - Math.hypot(x - cx, y - cy)) / 320, 0, 1);
         if (!reveal) continue;
       }
       const tw = reduceMotion ? 1 : 0.55 + 0.45 * Math.sin(t * 0.001 * s.ts + s.tw);
@@ -151,7 +147,7 @@
   let ejecta = null;
 
   function makeEjecta() {
-    const n = Math.round(clamp((W * H) / 2600, 220, 520));
+    const n = Math.round(clamp((W * H) / 9000, 60, 150));
     return Array.from({ length: n }, () => {
       const a = Math.random() * Math.PI * 2;
       const fast = Math.random() ** 2.2;
@@ -159,10 +155,10 @@
       return {
         cos: Math.cos(a),
         sin: Math.sin(a),
-        v: 0.25 + fast * 1.9,             // px per ms at launch
+        v: 0.15 + fast * 1.1,             // px per ms at launch
         tau: 700 + Math.random() * 900,   // drag time constant
-        life: 1400 + Math.random() * 2600,
-        w: 0.6 + Math.random() * 1.4,
+        life: 1200 + Math.random() * 1800,
+        w: 0.5 + Math.random() * 0.7,
         c: tint < 0.6 ? '210,225,255' : tint < 0.8 ? '255,205,160' : tint < 0.93 ? '190,160,255' : '255,255,255',
       };
     });
@@ -186,8 +182,8 @@
       const k = (e - NOVA_IGNITE) / (NOVA_BURST - NOVA_IGNITE);
       const collapse = k > 0.82 ? 1 - ((k - 0.82) / 0.18) ** 0.6 * 0.85 : 1;
       const flick = 0.85 + Math.random() * 0.15;
-      const r = (2 + k ** 2.5 * 26) * collapse;
-      glow(cx, cy, r * 6, [[0, `rgba(255,255,255,${0.9 * flick})`], [0.08, `rgba(200,220,255,${0.55 * flick})`], [0.35, `rgba(120,150,255,${0.12 * k})`], [1, 'rgba(0,0,0,0)']]);
+      const r = (1.5 + k ** 2.5 * 9) * collapse;
+      glow(cx, cy, r * 6, [[0, `rgba(255,255,255,${0.75 * flick})`], [0.08, `rgba(200,220,255,${0.3 * flick})`], [0.35, `rgba(120,150,255,${0.05 * k})`], [1, 'rgba(0,0,0,0)']]);
       sctx.globalCompositeOperation = 'source-over';
       return;
     }
@@ -196,22 +192,22 @@
     if (!ejecta) ejecta = makeEjecta();
 
     // flash
-    const flash = s < 90 ? s / 90 : Math.exp(-(s - 90) / 420);
+    const flash = 0.14 * (s < 160 ? s / 160 : Math.exp(-(s - 160) / 500));
     if (flash > 0.01) {
-      glow(cx, cy, maxR, [[0, `rgba(255,255,255,${flash})`], [0.25, `rgba(200,215,255,${flash * 0.55})`], [1, `rgba(90,110,200,${flash * 0.12})`]]);
+      glow(cx, cy, maxR, [[0, `rgba(255,255,255,${flash})`], [0.2, `rgba(200,215,255,${flash * 0.4})`], [1, 'rgba(0,0,0,0)']]);
     }
 
     // white-hot core and lingering remnant
-    const coreA = Math.exp(-s / 700);
-    glow(cx, cy, 30 + easeOut(Math.min(1, s / 900)) * 140, [[0, `rgba(255,255,255,${coreA})`], [0.3, `rgba(170,200,255,${coreA * 0.5})`], [1, 'rgba(0,0,0,0)']]);
-    const remA = 0.22 * Math.exp(-s / 2200) * Math.min(1, s / 300);
+    const coreA = 0.35 * Math.exp(-s / 600);
+    glow(cx, cy, 20 + easeOut(Math.min(1, s / 900)) * 70, [[0, `rgba(255,255,255,${coreA})`], [0.3, `rgba(170,200,255,${coreA * 0.5})`], [1, 'rgba(0,0,0,0)']]);
+    const remA = 0.08 * Math.exp(-s / 2200) * Math.min(1, s / 300);
     const remR = 120 + easeOut(Math.min(1, s / 5000)) * Math.min(W, H) * 0.55;
     glow(cx - 30, cy + 10, remR, [[0, `rgba(120,90,220,${remA})`], [0.5, `rgba(40,80,200,${remA * 0.45})`], [1, 'rgba(0,0,0,0)']]);
     glow(cx + 40, cy - 12, remR * 0.8, [[0, `rgba(255,140,90,${remA * 0.5})`], [1, 'rgba(0,0,0,0)']]);
 
     // light rays
     if (s < 1100) {
-      const ra = (1 - s / 1100) ** 2 * 0.5;
+      const ra = (1 - s / 1100) ** 2 * 0.07;
       for (let i = 0; i < 14; i++) {
         const a = i * 2.39996 + 0.4;
         const len = maxR * (0.35 + ((i * 37) % 10) / 16);
@@ -219,7 +215,7 @@
         g.addColorStop(0, `rgba(225,235,255,${ra})`);
         g.addColorStop(1, 'rgba(225,235,255,0)');
         sctx.strokeStyle = g;
-        sctx.lineWidth = 1 + (i % 3);
+        sctx.lineWidth = 1;
         sctx.beginPath();
         sctx.moveTo(cx, cy);
         sctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
@@ -229,8 +225,8 @@
 
     // shockwaves: a fast bright one and a slower tinted one
     const rings = [
-      [SHOCK_MS, maxR, '235,242,255', 0.9, 70],
-      [SHOCK_MS * 1.7, maxR * 0.8, '170,150,255', 0.45, 140],
+      [SHOCK_MS, maxR, '235,242,255', 0.16, 40],
+      [SHOCK_MS * 1.7, maxR * 0.8, '170,150,255', 0.07, 90],
     ];
     for (const [dur, R, c, peak, thick] of rings) {
       const k = s / dur;
@@ -253,10 +249,10 @@
       if (s > p.life) continue;
       const dist = p.v * p.tau * (1 - Math.exp(-s / p.tau));
       const speed = p.v * Math.exp(-s / p.tau);
-      const tail = Math.max(1.5, speed * 60);
+      const tail = Math.max(1, speed * 26);
       const x = cx + p.cos * dist;
       const y = cy + p.sin * dist;
-      const a = (1 - s / p.life) ** 1.4;
+      const a = 0.35 * (1 - s / p.life) ** 1.6;
       sctx.strokeStyle = `rgba(${p.c},${a})`;
       sctx.lineWidth = p.w;
       sctx.beginPath();

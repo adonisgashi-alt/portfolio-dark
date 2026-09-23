@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Adonis Gashi</title>
   <meta name="description" content="Adonis Gashi — selected projects, adrift in orbit.">
-  <meta name="theme-color" content="#03040a">
+  <meta name="theme-color" content="#010103">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
@@ -14,17 +14,25 @@
 <body>
   <canvas id="space" aria-hidden="true"></canvas>
 
-  <!-- Name treatment: translucent fill + light outline traced around each whole glyph -->
+  <!-- Name treatment: see-through glass fill, luminous inner rim, smooth outline.
+       Built from each glyph's whole silhouette, so the font's overlapping
+       contours never show as lines inside the letters. -->
   <svg class="defs" aria-hidden="true" focusable="false">
     <filter id="ghost" x="-30%" y="-20%" width="160%" height="140%" color-interpolation-filters="sRGB">
-      <feMorphology in="SourceAlpha" operator="dilate" radius="1" result="grow"/>
+      <!-- outline: a softly grown silhouette minus the glyph (anti-aliased, no jaggies) -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.9" result="soft"/>
+      <feComponentTransfer in="soft" result="grow"><feFuncA type="linear" slope="3.2"/></feComponentTransfer>
       <feComposite in="grow" in2="SourceAlpha" operator="out" result="ring"/>
-      <feFlood flood-color="#e3ebff" flood-opacity="0.8"/>
+      <feFlood flood-color="#e8eeff" flood-opacity="0.85"/>
       <feComposite in2="ring" operator="in" result="outline"/>
-      <feComponentTransfer in="SourceGraphic" result="fill">
-        <feFuncA type="linear" slope="0.3"/>
-      </feComponentTransfer>
-      <feMerge><feMergeNode in="fill"/><feMergeNode in="outline"/></feMerge>
+      <!-- glass rim: light gathering along the inside of each edge -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="deep"/>
+      <feComposite in="SourceAlpha" in2="deep" operator="arithmetic" k2="1" k3="-1" result="edge"/>
+      <feFlood flood-color="#d4e0ff" flood-opacity="0.5"/>
+      <feComposite in2="edge" operator="in" result="rim"/>
+      <!-- body: the gradient fill, kept but see-through -->
+      <feComponentTransfer in="SourceGraphic" result="fill"><feFuncA type="linear" slope="0.28"/></feComponentTransfer>
+      <feMerge><feMergeNode in="fill"/><feMergeNode in="rim"/><feMergeNode in="outline"/></feMerge>
     </filter>
   </svg>
 

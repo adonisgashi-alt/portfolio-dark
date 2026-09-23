@@ -25,6 +25,13 @@
   let H = innerHeight;
   const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 
+  // Supernova intro timeline (ms, relative to script start)
+  const T0 = performance.now();
+  const NOVA_IGNITE = 250;   // a single point of light appears
+  const NOVA_BURST = 1450;   // it collapses and detonates
+  const SHOCK_MS = 2600;     // primary shockwave reaches the screen edges
+  const easeOut = (k) => 1 - (1 - k) ** 3;
+
   /* ───────────── Starfield ───────────── */
 
   const space = $('space');
@@ -58,13 +65,30 @@
   function drawSpace(t) {
     sctx.clearRect(0, 0, W, H);
     const drift = reduceMotion ? 0 : t * 0.0035;
+    const since = t - T0 - NOVA_BURST;
+    const cx = W / 2;
+    const cy = H / 2;
+    const maxR = Math.hypot(W, H) * 0.62 + 160;
+    // stars only exist once the shockwave has swept past them
+    const shockR = reduceMotion ? Infinity : since <= 0 ? -1 : since >= SHOCK_MS ? Infinity : easeOut(since / SHOCK_MS) * maxR;
+
+    sctx.save();
+    if (!reduceMotion && since > 0 && since < 900) {
+      const amp = 7 * Math.exp(-since / 180);
+      sctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+    }
     for (const s of stars) {
       const d = 0.15 + s.z;
       let x = (s.x - drift * d + mouse.sx * 26 * d) % W;
       if (x < 0) x += W;
       const y = s.y + mouse.sy * 18 * d;
+      let reveal = 1;
+      if (shockR !== Infinity) {
+        reveal = clamp((shockR - Math.hypot(x - cx, y - cy)) / 180, 0, 1);
+        if (!reveal) continue;
+      }
       const tw = reduceMotion ? 1 : 0.55 + 0.45 * Math.sin(t * 0.001 * s.ts + s.tw);
-      const a = s.a * tw;
+      const a = s.a * tw * reveal;
       if (s.r < 1) {
         sctx.fillStyle = `rgba(${s.c},${a})`;
         sctx.fillRect(x, y, s.r * 1.4, s.r * 1.4);
@@ -81,6 +105,9 @@
         }
       }
     }
+
+    if (!reduceMotion) drawNova(t - T0, cx, cy, maxR);
+    sctx.restore();
 
     if (reduceMotion) return;
     if (!shooter && t > nextShooter) {
@@ -119,6 +146,128 @@
     }
   }
 
+  /* ───────────── Supernova ───────────── */
+
+  let ejecta = null;
+
+  function makeEjecta() {
+    const n = Math.round(clamp((W * H) / 2600, 220, 520));
+    return Array.from({ length: n }, () => {
+      const a = Math.random() * Math.PI * 2;
+      const fast = Math.random() ** 2.2;
+      const tint = Math.random();
+      return {
+        cos: Math.cos(a),
+        sin: Math.sin(a),
+        v: 0.25 + fast * 1.9,             // px per ms at launch
+        tau: 700 + Math.random() * 900,   // drag time constant
+        life: 1400 + Math.random() * 2600,
+        w: 0.6 + Math.random() * 1.4,
+        c: tint < 0.6 ? '210,225,255' : tint < 0.8 ? '255,205,160' : tint < 0.93 ? '190,160,255' : '255,255,255',
+      };
+    });
+  }
+
+  function glow(x, y, r, stops) {
+    const g = sctx.createRadialGradient(x, y, 0, x, y, r);
+    for (const [o, c] of stops) g.addColorStop(o, c);
+    sctx.fillStyle = g;
+    sctx.beginPath();
+    sctx.arc(x, y, r, 0, Math.PI * 2);
+    sctx.fill();
+  }
+
+  function drawNova(e, cx, cy, maxR) {
+    if (e < NOVA_IGNITE || e > NOVA_BURST + 6500) return;
+    sctx.globalCompositeOperation = 'lighter';
+
+    if (e < NOVA_BURST) {
+      // progenitor: a lone star swelling, then collapsing in on itself
+      const k = (e - NOVA_IGNITE) / (NOVA_BURST - NOVA_IGNITE);
+      const collapse = k > 0.82 ? 1 - ((k - 0.82) / 0.18) ** 0.6 * 0.85 : 1;
+      const flick = 0.85 + Math.random() * 0.15;
+      const r = (2 + k ** 2.5 * 26) * collapse;
+      glow(cx, cy, r * 6, [[0, `rgba(255,255,255,${0.9 * flick})`], [0.08, `rgba(200,220,255,${0.55 * flick})`], [0.35, `rgba(120,150,255,${0.12 * k})`], [1, 'rgba(0,0,0,0)']]);
+      sctx.globalCompositeOperation = 'source-over';
+      return;
+    }
+
+    const s = e - NOVA_BURST;
+    if (!ejecta) ejecta = makeEjecta();
+
+    // flash
+    const flash = s < 90 ? s / 90 : Math.exp(-(s - 90) / 420);
+    if (flash > 0.01) {
+      glow(cx, cy, maxR, [[0, `rgba(255,255,255,${flash})`], [0.25, `rgba(200,215,255,${flash * 0.55})`], [1, `rgba(90,110,200,${flash * 0.12})`]]);
+    }
+
+    // white-hot core and lingering remnant
+    const coreA = Math.exp(-s / 700);
+    glow(cx, cy, 30 + easeOut(Math.min(1, s / 900)) * 140, [[0, `rgba(255,255,255,${coreA})`], [0.3, `rgba(170,200,255,${coreA * 0.5})`], [1, 'rgba(0,0,0,0)']]);
+    const remA = 0.22 * Math.exp(-s / 2200) * Math.min(1, s / 300);
+    const remR = 120 + easeOut(Math.min(1, s / 5000)) * Math.min(W, H) * 0.55;
+    glow(cx - 30, cy + 10, remR, [[0, `rgba(120,90,220,${remA})`], [0.5, `rgba(40,80,200,${remA * 0.45})`], [1, 'rgba(0,0,0,0)']]);
+    glow(cx + 40, cy - 12, remR * 0.8, [[0, `rgba(255,140,90,${remA * 0.5})`], [1, 'rgba(0,0,0,0)']]);
+
+    // light rays
+    if (s < 1100) {
+      const ra = (1 - s / 1100) ** 2 * 0.5;
+      for (let i = 0; i < 14; i++) {
+        const a = i * 2.39996 + 0.4;
+        const len = maxR * (0.35 + ((i * 37) % 10) / 16);
+        const g = sctx.createLinearGradient(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+        g.addColorStop(0, `rgba(225,235,255,${ra})`);
+        g.addColorStop(1, 'rgba(225,235,255,0)');
+        sctx.strokeStyle = g;
+        sctx.lineWidth = 1 + (i % 3);
+        sctx.beginPath();
+        sctx.moveTo(cx, cy);
+        sctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+        sctx.stroke();
+      }
+    }
+
+    // shockwaves: a fast bright one and a slower tinted one
+    const rings = [
+      [SHOCK_MS, maxR, '235,242,255', 0.9, 70],
+      [SHOCK_MS * 1.7, maxR * 0.8, '170,150,255', 0.45, 140],
+    ];
+    for (const [dur, R, c, peak, thick] of rings) {
+      const k = s / dur;
+      if (k >= 1) continue;
+      const r = easeOut(k) * R;
+      const a = peak * (1 - k) ** 1.6;
+      const g = sctx.createRadialGradient(cx, cy, Math.max(0, r - thick), cx, cy, r);
+      g.addColorStop(0, `rgba(${c},0)`);
+      g.addColorStop(0.8, `rgba(${c},${a * 0.25})`);
+      g.addColorStop(1, `rgba(${c},${a})`);
+      sctx.fillStyle = g;
+      sctx.beginPath();
+      sctx.arc(cx, cy, r, 0, Math.PI * 2);
+      sctx.fill();
+    }
+
+    // ejecta streaks, slowing under drag
+    sctx.lineCap = 'round';
+    for (const p of ejecta) {
+      if (s > p.life) continue;
+      const dist = p.v * p.tau * (1 - Math.exp(-s / p.tau));
+      const speed = p.v * Math.exp(-s / p.tau);
+      const tail = Math.max(1.5, speed * 60);
+      const x = cx + p.cos * dist;
+      const y = cy + p.sin * dist;
+      const a = (1 - s / p.life) ** 1.4;
+      sctx.strokeStyle = `rgba(${p.c},${a})`;
+      sctx.lineWidth = p.w;
+      sctx.beginPath();
+      sctx.moveTo(x, y);
+      sctx.lineTo(x - p.cos * tail, y - p.sin * tail);
+      sctx.stroke();
+    }
+
+    sctx.globalCompositeOperation = 'source-over';
+  }
+
   /* ───────────── Name ───────────── */
 
   const nameWrap = $('nameWrap');
@@ -131,6 +280,8 @@
     nameEl.setAttribute('aria-label', text);
 
     let maxDelay = 0;
+    const count = text.replace(/ /g, '').length;
+    let idx = 0;
     text.split(' ').forEach((word, wi) => {
       if (wi > 0) nameEl.appendChild(document.createTextNode(' '));
       const w = document.createElement('span');
@@ -145,8 +296,9 @@
         t.className = 't';
         t.textContent = char;
         g.appendChild(t);
-        // letters arrive out of order, like light from different distances
-        const d = reduceMotion ? 0 : 0.6 + Math.random() * 2.4;
+        // letters condense out of the blast, from the centre outwards
+        const off = Math.abs(idx++ - (count - 1) / 2) / (count / 2);
+        const d = reduceMotion ? 0 : NOVA_BURST / 1000 + 0.12 + off * 0.75 + Math.random() * 0.35;
         maxDelay = Math.max(maxDelay, d);
         ch.style.setProperty('--d', d.toFixed(2) + 's');
         ch.appendChild(g);
@@ -164,7 +316,7 @@
     };
     makeClone('name--shine');
 
-    introEnd = reduceMotion ? 0 : (maxDelay + 2.2) * 1000;
+    introEnd = reduceMotion ? 0 : (maxDelay + 1.6) * 1000;
   }
 
   function startSparkles() {
@@ -263,9 +415,12 @@
         o.el.style.zIndex = 5;
         continue;
       }
-      const px = Math.cos(o.theta) * o.rx;
-      const wob = reduceMotion ? 0 : Math.sin(t * 0.00035 + o.wob) * o.wobAmp;
-      const py = Math.sin(o.theta) * o.ry + wob;
+      if (o.appearAt && t > o.appearAt) o.appear = Math.min(1, o.appear + dt / 2400);
+      // flung out of the blast and settling into orbit
+      const launch = reduceMotion ? 1 : easeOut(o.appear);
+      const px = Math.cos(o.theta) * o.rx * launch;
+      const wob = reduceMotion ? 0 : Math.sin(t * 0.00035 + o.wob) * o.wobAmp * launch;
+      const py = Math.sin(o.theta) * o.ry * launch + wob;
       const c = Math.cos(o.tilt);
       const s = Math.sin(o.tilt);
       o.x = center.x + px * c - py * s + mouse.sx * 10;
@@ -275,7 +430,6 @@
       const depth = (z + 1) / 2;
       const scale = 0.6 + depth * 0.5;
 
-      if (o.appearAt && t > o.appearAt) o.appear = Math.min(1, o.appear + dt / 1800);
       const focused = o === active;
       const opacity = o.appear * (focused ? 1 : 0.4 + depth * 0.6);
 
@@ -678,7 +832,7 @@
 
   const boot = performance.now();
   orbs.forEach((o, i) => {
-    o.appearAt = boot + introEnd * 0.8 + i * 380;
+    o.appearAt = reduceMotion ? boot + i * 200 : T0 + NOVA_BURST + 150 + i * 110;
   });
 
   setTimeout(() => {

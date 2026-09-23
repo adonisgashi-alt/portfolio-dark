@@ -29,6 +29,8 @@ body {
     var(--bg);
 }
 
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
 #space {
   position: fixed;
   inset: 0;
@@ -58,10 +60,11 @@ body {
 .name {
   margin: 0;
   font-family: var(--display);
-  font-weight: 200;
-  font-size: clamp(2.3rem, 8.6vw, 8.2rem);
-  line-height: 1.12;
-  letter-spacing: 0.035em;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 8.2vw, 10rem);
+  line-height: 1.08;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .name--main {
@@ -77,12 +80,20 @@ body {
 
 .name .g {
   display: inline-block;
-  color: transparent;
-  background: linear-gradient(180deg, #fbfcff 0%, #cdd6ec 48%, #7f8aa6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
   opacity: 0;
   animation: arrive 2.8s var(--ease-out) var(--d) forwards;
+}
+
+/* Opaque gradient glyph; the #ghost SVG filter turns it into a translucent
+   fill with a light outline (CSS text-stroke would trace the font's
+   overlapping contours and show lines inside the letters). */
+.name .t {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(180deg, #fbfcff 0%, #cdd6ec 50%, #8791ad 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: url(#ghost);
 }
 
 @keyframes arrive {
@@ -126,17 +137,13 @@ body {
   100% { opacity: 0; transform: scale(0.1) rotate(90deg); }
 }
 
-/* Clone layers: subtle travelling sheen + mirrored reflection */
-.name--shine,
-.name--reflect {
+/* Clone layer: subtle travelling sheen */
+.name--shine {
   position: absolute;
   left: 0;
   right: 0;
   padding: inherit;
   pointer-events: none;
-}
-
-.name--shine {
   top: 0;
   opacity: 0;
   transition: opacity 3s ease;
@@ -149,7 +156,7 @@ body {
   animation: sweep 11s ease-in-out infinite;
 }
 
-.name--shine .g {
+.name--shine .t {
   background: linear-gradient(180deg, #ffffff, #dfe9ff);
   -webkit-background-clip: text;
   background-clip: text;
@@ -161,33 +168,6 @@ body {
   0%        { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
   55%, 100% { -webkit-mask-position: 0 0; mask-position: 0 0; }
 }
-
-.name--reflect {
-  top: 100%;
-  margin-top: -0.14em;
-  transform: scaleY(-1);
-  opacity: 0.16;
-  filter: blur(1.2px);
-  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 55%);
-  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 55%);
-}
-
-/* Faint glass horizon between name and reflection */
-.name-wrap::after {
-  content: '';
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: calc(100% - 0.02em);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(170, 200, 255, 0.28), transparent);
-  opacity: 0;
-  transform: scaleX(0.2);
-  transition: opacity 3s ease, transform 3s var(--ease-out);
-}
-
-.is-lit .name-wrap::after,
-.name-wrap.is-lit::after { opacity: 1; transform: scaleX(1); }
 
 /* Recede while a project is being inspected */
 .name-wrap > .name { transition: opacity 1.2s ease, filter 1.2s ease; }

@@ -141,7 +141,10 @@
         ch.className = 'ch';
         const g = document.createElement('span');
         g.className = 'g';
-        g.textContent = char;
+        const t = document.createElement('span');
+        t.className = 't';
+        t.textContent = char;
+        g.appendChild(t);
         // letters arrive out of order, like light from different distances
         const d = reduceMotion ? 0 : 0.6 + Math.random() * 2.4;
         maxDelay = Math.max(maxDelay, d);
@@ -160,7 +163,6 @@
       nameWrap.appendChild(c);
     };
     makeClone('name--shine');
-    makeClone('name--reflect');
 
     introEnd = reduceMotion ? 0 : (maxDelay + 2.2) * 1000;
   }

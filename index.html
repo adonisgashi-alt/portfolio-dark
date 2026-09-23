@@ -8,11 +8,25 @@
   <meta name="theme-color" content="#03040a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Unbounded:wght@200;300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Unbounded:wght@300;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="space" aria-hidden="true"></canvas>
+
+  <!-- Name treatment: translucent fill + light outline traced around each whole glyph -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <filter id="ghost" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="1" result="grow"/>
+      <feComposite in="grow" in2="SourceAlpha" operator="out" result="ring"/>
+      <feFlood flood-color="#e3ebff" flood-opacity="0.8"/>
+      <feComposite in2="ring" operator="in" result="outline"/>
+      <feComponentTransfer in="SourceGraphic" result="fill">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge><feMergeNode in="fill"/><feMergeNode in="outline"/></feMerge>
+    </filter>
+  </svg>
 
   <main class="stage" id="stage">
     <div class="name-wrap" id="nameWrap">

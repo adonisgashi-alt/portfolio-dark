@@ -4,7 +4,7 @@
   --ink-dim: #8a97b8;
   --line: rgba(150, 180, 255, 0.14);
   --accent: 210;
-  --display: 'Unbounded', system-ui, sans-serif;
+  --display: 'Space Grotesk', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
   --ease-out: cubic-bezier(0.16, 0.84, 0.24, 1);
 }
@@ -60,8 +60,9 @@ body {
 .name {
   margin: 0;
   font-family: var(--display);
-  font-weight: 600;
-  font-size: clamp(2.6rem, 8.2vw, 10rem);
+  font-weight: 700;
+  font-optical-sizing: auto;
+  font-size: clamp(2.8rem, 11vw, 13.5rem);
   line-height: 1.08;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -518,7 +519,7 @@ body {
   margin: 14px 0 0;
   min-height: 1.3em;
   font-family: var(--display);
-  font-weight: 300;
+  font-weight: 400;
   font-size: 17px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
